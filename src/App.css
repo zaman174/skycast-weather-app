@@ -1,38 +1,212 @@
-.App {
-  text-align: center;
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.app {
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  transition: 0.5s ease;
+}
+
+/* Weather backgrounds */
+.sunny {
+  background: linear-gradient(135deg, #f6d365, #fda085);
+}
+
+.rainy {
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+}
+
+.cloudy {
+  background: linear-gradient(135deg, #bdc3c7, #2c3e50);
+}
+
+.snowy {
+  background: linear-gradient(135deg, #e6dada, #274046);
+}
+
+/* Dark mode */
+.dark {
+  background: #121212 !important;
+}
+
+.dark .weather-card {
+  background: #1f1f1f;
   color: white;
 }
 
-.App-link {
-  color: #61dafb;
+.dark input {
+  background: #333;
+  color: white;
+  border: 1px solid #555;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.dark .forecast-card {
+  background: #333;
+  color: white;
+}
+
+/* Main card */
+.weather-card {
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  width: 450px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+/* Theme button */
+.theme-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  padding: 8px 14px;
+  border: none;
+  background: #444;
+  color: white;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.theme-btn:hover {
+  opacity: 0.9;
+}
+
+/* Search */
+.search-box {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.search-box input {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  outline: none;
+  font-size: 16px;
+}
+
+.search-box button {
+  padding: 12px 18px;
+  border: none;
+  background: #4a90e2;
+  color: white;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.search-box button:hover {
+  background: #357abd;
+}
+
+.search-box button:disabled {
+  background: gray;
+  cursor: not-allowed;
+}
+
+/* Weather info */
+.weather-info img {
+  width: 100px;
+}
+
+.details {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 20px;
+}
+
+/* Error */
+.error {
+  color: red;
+  font-weight: bold;
+}
+
+/* Forecast */
+.forecast {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 25px;
+  flex-wrap: wrap;
+}
+
+.forecast-card {
+  background: #f3f3f3;
+  padding: 10px;
+  border-radius: 12px;
+  width: 70px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.forecast-card img {
+  width: 40px;
+}
+.location-btn {
+  margin-bottom: 15px;
+  padding: 10px 16px;
+  border: none;
+  background: #27ae60;
+  color: white;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.history {
+  margin: 20px 0;
+}
+
+.history button {
+  margin: 5px;
+  padding: 8px 12px;
+  border: none;
+  background: #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.hourly {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  margin: 20px 0;
+  padding: 10px;
+}
+
+.hour-card {
+  min-width: 80px;
+  background: #f3f3f3;
+  padding: 10px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.hour-card img {
+  width: 35px;
+}
+
+.dark .hour-card {
+  background: #333;
+  color: white;
+}
+.app-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.logo {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
 }
