@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./App.css";
-import logo from "./skycast-logo.png";
+
+const API_KEY = process.env.REACT_APP_WEATHER_KEY;
 
 function App() {
   const [city, setCity] = useState("");
@@ -8,136 +9,93 @@ function App() {
   const [forecast, setForecast] = useState([]);
   const [hourlyForecast, setHourlyForecast] = useState([]);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-  const [history, setHistory] = useState([]);
+  const [darkMode, setDarkMode] = useState(true);
+  const [recentSearches, setRecentSearches] = useState([]);
 
-  const API_KEY = process.env.REACT_APP_WEATHER_KEY;
+  const getWeather = async (cityName) => {
+    if (!cityName.trim()) return;
 
-  const saveHistory = (searchedCity) => {
-    const updatedHistory = [
-      searchedCity,
-      ...history.filter((item) => item !== searchedCity),
-    ].slice(0, 5);
+    try {
+      setError("");
 
-    setHistory(updatedHistory);
-    localStorage.setItem("weatherHistory", JSON.stringify(updatedHistory));
+      const weatherResponse = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${API_KEY}&units=metric`
+      );
+
+      const weatherData = await weatherResponse.json();
+
+      if (weatherData.cod !== 200) {
+        setError("City not found");
+        return;
+      }
+
+      setWeather(weatherData);
+
+      const forecastResponse = await fetch(
+        `https://api.openweathermap.org/data/2.5/forecast?q=${cityName}&appid=${API_KEY}&units=metric`
+      );
+
+      const forecastData = await forecastResponse.json();
+
+      setHourlyForecast(forecastData.list.slice(0, 5));
+
+      const dailyData = forecastData.list.filter((item, index) => index % 8 === 0);
+      setForecast(dailyData.slice(0, 5));
+
+      let searches = JSON.parse(localStorage.getItem("recentSearches")) || [];
+
+      if (!searches.includes(weatherData.name)) {
+        searches.unshift(weatherData.name);
+        searches = searches.slice(0, 5);
+        localStorage.setItem("recentSearches", JSON.stringify(searches));
+      }
+
+      setRecentSearches(searches);
+      setCity("");
+    } catch (err) {
+      setError("Something went wrong");
+    }
   };
 
-  const processForecast = (forecastData) => {
-    const dailyForecast = forecastData.list.filter(
-      (_, index) => index % 8 === 0
-    );
-
-    const hourly = forecastData.list.slice(0, 8);
-
-    setForecast(dailyForecast);
-    setHourlyForecast(hourly);
-  };
-
-const getWeather = async (searchCity = city.trim()) => {
-  if (!searchCity) {
-    setError("Please enter a city name");
-    return;
-  }
-
-  setLoading(true);
-setError("");
-setWeather(null);
-setForecast([]);
-setHourlyForecast([]);
-
-  try {
-    const currentResponse = await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?q=${searchCity}&appid=${API_KEY}&units=metric`
-    );
-
-    const currentData = await currentResponse.json();
-
-    if (currentData.cod !== 200) {
-      setError(currentData.message);
-      setLoading(false);
+  const getLocationWeather = () => {
+    if (!navigator.geolocation) {
+      setError("Geolocation not supported");
       return;
     }
 
-    setWeather(currentData);
-    saveHistory(currentData.name);
-
-    const forecastResponse = await fetch(
-      `https://api.openweathermap.org/data/2.5/forecast?q=${searchCity}&appid=${API_KEY}&units=metric`
-    );
-
-    const forecastData = await forecastResponse.json();
-
-    processForecast(forecastData);
-
-  } catch {
-    setError("Something went wrong");
-  }
-
-  setLoading(false);
-};
-
-  const getLocationWeather = () => {
     navigator.geolocation.getCurrentPosition(async (position) => {
-      const lat = position.coords.latitude;
-      const lon = position.coords.longitude;
-
-      setLoading(true);
+      const { latitude, longitude } = position.coords;
 
       try {
-        const currentResponse = await fetch(
-          `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`
+        const response = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric`
         );
 
-        const currentData = await currentResponse.json();
+        const data = await response.json();
 
-        setWeather(currentData);
-        saveHistory(currentData.name);
-
-        const forecastResponse = await fetch(
-          `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`
-        );
-
-        const forecastData = await forecastResponse.json();
-
-        processForecast(forecastData);
-
-      } catch {
-        setError("Location weather failed");
+        if (data.cod === 200) {
+          getWeather(data.name);
+        }
+      } catch (err) {
+        setError("Location fetch failed");
       }
-
-      setLoading(false);
     });
   };
 
   useEffect(() => {
+    const savedSearches =
+      JSON.parse(localStorage.getItem("recentSearches")) || [];
+    setRecentSearches(savedSearches);
+
     getWeather("Delhi");
-
-    const savedHistory =
-      JSON.parse(localStorage.getItem("weatherHistory")) || [];
-
-    setHistory(savedHistory);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const getBackgroundClass = () => {
-    if (!weather) return "";
-
-    const condition = weather.weather[0].main.toLowerCase();
-
-    if (condition.includes("cloud")) return "cloudy";
-    if (condition.includes("rain")) return "rainy";
-    if (condition.includes("clear")) return "sunny";
-    if (condition.includes("snow")) return "snowy";
-
-    return "";
-  };
-
   return (
-    <div className={`app ${darkMode ? "dark" : ""} ${getBackgroundClass()}`}>
-      <div className="weather-card">
+    <div className={darkMode ? "app dark" : "app light"}>
+      <div className="weather-container">
         <button
-          className="theme-btn"
+          className="theme-toggle"
           onClick={() => setDarkMode(!darkMode)}
         >
           {darkMode ? "☀️ Light" : "🌙 Dark"}
@@ -152,27 +110,28 @@ setHourlyForecast([]);
             value={city}
             onChange={(e) => setCity(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") getWeather();
+              if (e.key === "Enter") {
+                getWeather(city);
+              }
             }}
           />
-
-          <button onClick={getWeather} disabled={loading}>
-            {loading ? "Searching..." : "Search"}
-          </button>
+          <button onClick={() => getWeather(city)}>Search</button>
         </div>
 
         <button className="location-btn" onClick={getLocationWeather}>
           📍 Use My Location
         </button>
 
-        {history.length > 0 && (
-          <div className="history">
+        {recentSearches.length > 0 && (
+          <div className="recent-searches">
             <h3>Recent Searches</h3>
-            {history.map((item, index) => (
-              <button key={index} onClick={() => getWeather(item)}>
-                {item}
-              </button>
-            ))}
+            <div className="recent-list">
+              {recentSearches.map((item, index) => (
+                <button key={index} onClick={() => getWeather(item)}>
+                  {item}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -181,21 +140,18 @@ setHourlyForecast([]);
         {weather && (
           <div className="weather-info">
             <h2>{weather.name}</h2>
-
             <img
               src={`https://openweathermap.org/img/wn/${weather.weather[0].icon}@2x.png`}
               alt="weather"
             />
-
             <h1>{Math.round(weather.main.temp)}°C</h1>
             <p>{weather.weather[0].main}</p>
 
-            <div className="details">
+            <div className="extra-info">
               <div>
                 <h3>Humidity</h3>
                 <p>{weather.main.humidity}%</p>
               </div>
-
               <div>
                 <h3>Wind Speed</h3>
                 <p>{weather.wind.speed} m/s</p>
@@ -205,47 +161,42 @@ setHourlyForecast([]);
         )}
 
         {hourlyForecast.length > 0 && (
-          <>
-            <h3>Hourly Forecast</h3>
-            <div className="hourly">
-              {hourlyForecast.map((hour, index) => (
-                <div key={index} className="hour-card">
-                  <p>
-                    {new Date(hour.dt_txt).toLocaleTimeString([], {
-                      hour: "numeric",
-                    })}
-                  </p>
-
+          <div className="forecast">
+            <h2>Hourly Forecast</h2>
+            <div className="forecast-list">
+              {hourlyForecast.map((item, index) => (
+                <div key={index} className="forecast-card">
+                  <p>{new Date(item.dt_txt).toLocaleTimeString([], { hour: "numeric" })}</p>
                   <img
-                    src={`https://openweathermap.org/img/wn/${hour.weather[0].icon}.png`}
+                    src={`https://openweathermap.org/img/wn/${item.weather[0].icon}.png`}
                     alt=""
                   />
-
-                  <p>{Math.round(hour.main.temp)}°C</p>
+                  <p>{Math.round(item.main.temp)}°C</p>
                 </div>
               ))}
             </div>
-          </>
+          </div>
         )}
 
         {forecast.length > 0 && (
           <div className="forecast">
-            {forecast.map((day, index) => (
-              <div key={index} className="forecast-card">
-                <p>
-                  {new Date(day.dt_txt).toLocaleDateString("en-US", {
-                    weekday: "short",
-                  })}
-                </p>
-
-                <img
-                  src={`https://openweathermap.org/img/wn/${day.weather[0].icon}.png`}
-                  alt=""
-                />
-
-                <p>{Math.round(day.main.temp)}°C</p>
-              </div>
-            ))}
+            <h2>5-Day Forecast</h2>
+            <div className="forecast-list">
+              {forecast.map((item, index) => (
+                <div key={index} className="forecast-card">
+                  <p>
+                    {new Date(item.dt_txt).toLocaleDateString("en-US", {
+                      weekday: "short",
+                    })}
+                  </p>
+                  <img
+                    src={`https://openweathermap.org/img/wn/${item.weather[0].icon}.png`}
+                    alt=""
+                  />
+                  <p>{Math.round(item.main.temp)}°C</p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
